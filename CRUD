@@ -1,0 +1,116 @@
+using FirebirdSql.Data.FirebirdClient;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+
+public class EmployeeRepository
+{
+    private string connectionString;
+
+    public EmployeeRepository()
+    {
+        connectionString = ConfigurationManager.ConnectionStrings["FirebirdConnection"].ConnectionString;
+    }
+
+    public void Create(Employee employee)
+    {
+        using (FbConnection connection = new FbConnection(connectionString))
+        {
+            connection.Open();
+            string query = "INSERT INTO Employees (Id, Name, Position, Salary) VALUES (@Id, @Name, @Position, @Salary)";
+            using (FbCommand command = new FbCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", employee.Id);
+                command.Parameters.AddWithValue("@Name", employee.Name);
+                command.Parameters.AddWithValue("@Position", employee.Position);
+                command.Parameters.AddWithValue("@Salary", employee.Salary);
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    public Employee Read(int id)
+    {
+        using (FbConnection connection = new FbConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM Employees WHERE Id = @Id";
+            using (FbCommand command = new FbCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", id);
+                using (FbDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Employee
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Position = reader.GetString(reader.GetOrdinal("Position")),
+                            Salary = reader.GetDecimal(reader.GetOrdinal("Salary"))
+                        };
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public void Update(Employee employee)
+    {
+        using (FbConnection connection = new FbConnection(connectionString))
+        {
+            connection.Open();
+            string query = "UPDATE Employees SET Name = @Name, Position = @Position, Salary = @Salary WHERE Id = @Id";
+            using (FbCommand command = new FbCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", employee.Id);
+                command.Parameters.AddWithValue("@Name", employee.Name);
+                command.Parameters.AddWithValue("@Position", employee.Position);
+                command.Parameters.AddWithValue("@Salary", employee.Salary);
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    public void Delete(int id)
+    {
+        using (FbConnection connection = new FbConnection(connectionString))
+        {
+            connection.Open();
+            string query = "DELETE FROM Employees WHERE Id = @Id";
+            using (FbCommand command = new FbCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", id);
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    public List<Employee> GetAll()
+    {
+        List<Employee> employees = new List<Employee>();
+        using (FbConnection connection = new FbConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM Employees";
+            using (FbCommand command = new FbCommand(query, connection))
+            {
+                using (FbDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        employees.Add(new Employee
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Position = reader.GetString(reader.GetOrdinal("Position")),
+                            Salary = reader.GetDecimal(reader.GetOrdinal("Salary"))
+                        });
+                    }
+                }
+            }
+        }
+        return employees;
+    }
+}
